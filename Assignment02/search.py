@@ -12,6 +12,8 @@
 
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from queue import PriorityQueue
 from typing import Callable, Tuple
 
 
@@ -60,15 +62,17 @@ STRAIGHTLINE_DISTANCE_TO_BUCHAREST = {
     "Timisoara": 329,
     "Urziceni": 80,
     "Vaslui": 199,
-    "Zerind": 374
+    "Zerind": 374,
 }
+def get_straightline_distance_to_bucharest(node: GraphNode):
+    return STRAIGHTLINE_DISTANCE_TO_BUCHAREST[node.label]
 
 romania = Graph([
     "Arad", "Bucharest", "Craiova", "Drobeta",
     "Eforie", "Fagaras", "Giurgiu", "Hirsova",
     "Iasi", "Lugoj", "Mehadia", "Neamt",
     "Oradea", "Pitesti", "Rimnicu Vilcea", "Sibiu",
-    "Timisoara", "Urziceni", "Vaslui", "Zerind"
+    "Timisoara", "Urziceni", "Vaslui", "Zerind",
 ], [
     ("Arad", "Zerind", 75),
     ("Arad", "Timisoara", 118),
@@ -92,20 +96,22 @@ romania = Graph([
     ("Hirsova", "Eforie", 86),
     ("Vaslui", "Urziceni", 142),
     ("Vaslui", "Iasi", 92),
-    ("Neamt", "Iasi", 87)
+    ("Neamt", "Iasi", 87),
 ])
 
 
 
 
 
-class SearchQueue(ABC):
-    def __init__(self) -> None:
-        self.items = [] # type: list[Tuple[GraphNode, list[GraphNode]]]
-
-    def is_empty(self) -> bool:
-        return len(self.items) == 0
-
+@dataclass(order=True)
+class GraphSearchItem:
+    priority: float
+    item: Tuple[GraphNode, list[GraphNode]]=field(compare=False)
+class AbstractSearchQueue(ABC):
+    @abstractmethod
+    def get_items(self) -> list[GraphNode]: pass
+    @abstractmethod
+    def is_empty(self) -> bool: pass
     @abstractmethod
     def insert(self, candidate: Tuple[GraphNode, list[GraphNode]], cost: float): pass
     @abstractmethod
@@ -115,20 +121,57 @@ class SearchQueue(ABC):
         for adj_node, adj_cost in node.get_edges():
             self.insert((adj_node, [ *path, adj_node ]), adj_cost)
 
+class SearchList(AbstractSearchQueue):
+    def __init__(self) -> None:
+        self.items = [] # type: list[Tuple[GraphNode, list[GraphNode]]]
+    def get_items(self) -> list[GraphNode]:
+        return list(map(lambda c: c[0], self.items))
+    def is_empty(self) -> bool:
+        return len(self.items) == 0
+class SearchQueue(AbstractSearchQueue):
+    def __init__(self) -> None:
+        self.queue = PriorityQueue(128)
+    def get_items(self) -> list[GraphNode]:
+        return list(map(lambda c: c.item[0], self.queue.queue))
+    def is_empty(self) -> bool:
+        return self.queue.empty()
 
 
-class DepthFirstQueue(SearchQueue):
+
+
+class DepthFirstQueue(SearchList):
     def insert(self, candidate: Tuple[GraphNode, list[GraphNode]], _cost):
         self.items.insert(0, candidate)
     def remove(self) -> GraphNode:
         return self.items.pop(0)
 
-class BreadthFirstQueue(SearchQueue):
+class BreadthFirstQueue(SearchList):
     def insert(self, candidate: Tuple[GraphNode, list[GraphNode]], _cost):
         self.items.append(candidate)
     def remove(self) -> GraphNode:
         return self.items.pop(0)
 
+class BestFirstQueue(SearchQueue):
+    def __init__(self, heuristic: Callable[[GraphNode], float]) -> None:
+        super().__init__()
+        self.heuristic = heuristic
+
+    def insert(self, candidate: Tuple[GraphNode, list[GraphNode]], _cost):
+        item = GraphSearchItem(self.heuristic(candidate[0]), candidate)
+        self.queue.put(item)
+    def remove(self) -> GraphNode:
+        return self.queue.get().item
+
+class AStarQueue(SearchQueue):
+    def __init__(self, heuristic: Callable[[GraphNode], float]) -> None:
+        super().__init__()
+        self.heuristic = heuristic
+
+    def insert(self, candidate: Tuple[GraphNode, list[GraphNode]], cost):
+        item = GraphSearchItem(self.heuristic(candidate[0]) + cost, candidate)
+        self.queue.put(item)
+    def remove(self) -> GraphNode:
+        return self.queue.get().item
 
 
 def generic_tree_search(start_node: GraphNode, queue: SearchQueue, goal_fn: Callable[[GraphNode], bool]) -> list[GraphNode]:
@@ -146,7 +189,7 @@ def generic_tree_search(start_node: GraphNode, queue: SearchQueue, goal_fn: Call
     seen = set() # type: set[GraphNode]
     queue.insert((start_node, [ start_node ]), 0)
     while not queue.is_empty():
-        print(list(map(lambda c: c[0].label, queue.items)))
+        print(list(map(lambda node: node.label, queue.get_items())))
         next, next_path = queue.remove()
         if next in seen: continue
         seen.add(next)
@@ -156,15 +199,36 @@ def generic_tree_search(start_node: GraphNode, queue: SearchQueue, goal_fn: Call
     return None
 
 
-print("Depth-First (Queue):")
-path = generic_tree_search(romania.get_node("Arad"), DepthFirstQueue(), lambda goal: goal.label == "Bucharest")
+
+def goal_fn(node: GraphNode):
+    return node.label == "Bucharest"
+
+start_node = romania.get_node("Lugoj")
+
+print("\nDepth-First (Queue):")
+path = generic_tree_search(start_node, DepthFirstQueue(), goal_fn)
 path_names = list(map(lambda node: node.label, path))
 print("Depth-First (Solution):")
 print(path_names)
-print("")
 
-print("Breadth-First (Queue):")
-path = generic_tree_search(romania.get_node("Arad"), BreadthFirstQueue(), lambda goal: goal.label == "Bucharest")
+print("\nBreadth-First (Queue):")
+path = generic_tree_search(start_node, BreadthFirstQueue(), goal_fn)
 path_names = list(map(lambda node: node.label, path))
 print("Breadth-First (Solution):")
 print(path_names)
+
+print("\nBest-First (Queue):")
+best_queue = BestFirstQueue(get_straightline_distance_to_bucharest)
+path = generic_tree_search(start_node, best_queue, goal_fn)
+path_names = list(map(lambda node: node.label, path))
+print("Best-First (Solution):")
+print(path_names)
+
+print("\nA* (Queue):")
+astar_queue = AStarQueue(get_straightline_distance_to_bucharest)
+path = generic_tree_search(start_node, astar_queue, goal_fn)
+path_names = list(map(lambda node: node.label, path))
+print("A* (Solution):")
+print(path_names)
+
+#compare correctiness and efficiency
