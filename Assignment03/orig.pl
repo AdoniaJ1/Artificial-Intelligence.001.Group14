@@ -62,28 +62,35 @@ split_in_half(L, L1, L2) :-
 merge([], L, L). % A list merged with the empty list is that list.
 merge(L, [],L).  % A list merged with the empty list is that list.
 merge([H1|T1],[H2|T2],[H1|T]):-
-    H1 > H2,
+    H1 =< H2,
     merge(T1,[H2|T2],T).
 merge([H1|T1], [H2|T2], [H2|T]):-
-    H1 =< H2
+    H2 =< H1
     merge([H1|T1], T2, T).
 
-/* Comment describing split for quickSort */
+/*
+ * Given a median value and a list, partitions the list into the latter two variables, which are the elements less than
+ * or equal to the median value and the elements greater than the median value, respectively.
+ */
 split(_, [],[],[]).
 split(X, [H|T], [H|SMALL], BIG):-
     H =< X,
-    split(X, T, SMALL, FILLINHERE).
+    split(X, T, SMALL, BIG).
 split(X, [H|T], SMALL, [H|BIG]):-
     X =< H,
-    split(X, T, FILLINHERE, BIG).
+    split(X, T, SMALL, BIG).
 
-/* Comment describing quickSort */
+/*
+ * Given a list and a variable, performs quick sort on the list to populate the variable with the sorted list.
+ * Partitions the list on the first element, then recursively quick sorts the partitions, then appends the sorted lists
+ * together.
+ */
 quickSort([], []).
 quickSort([H|T], LS):-
-    split(H, T, SMALL, FILLINHERE),
+    split(H, T, SMALL, BIG),
     quickSort(SMALL, S),
     quickSort(BIG, B),
-    append(S, [H|B], FILLINHERE).
+    append(S, [H|B], LS).
 
 /* Comment describing hybridSort */
 hybridSort(LIST, bubbleSort, BIGALG, T, SLIST):-
