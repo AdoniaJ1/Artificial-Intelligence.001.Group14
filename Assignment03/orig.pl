@@ -35,35 +35,38 @@ insertionSort([H|T], SORTED) :-
     insertionSort(T, T1),
     insert(H, T1, FILLINHERE).
 
-/* Comment to describe meregeSort... */
-mergeSort([], []).    %the empty list is sorted
+/*
+ * Given a list and a variable, performs merge sort on the list to populate the variable with the sorted list.
+ * First splits the list in half, merge sorts either list, then merges them together.
+ */
+mergeSort([], []). % the empty list is sorted
 mergeSort([X], [X]) :- !.
 mergeSort(L, SL):-
     split_in_half(L, L1, L2),
-    mergeSort(L1, FILLINHERE),
+    mergeSort(L1, S1),
     mergeSort(L2, S2),
-    merge(S1, FILLINHERE, SL).
+    merge(S1, S2, SL).
 
-/* Comment to describe split_in_half...*/
-intDiv(N,N1, R):- R is div(N,N1).
+/* Populates R with the result of integer-dividing N by N1. */
+intDiv(N, N1, R):- R is div(N, N1).
 
-split_in_half([], _, _):-!, fail.
+split_in_half([], _, _) :- !, fail.
 split_in_half([X],[],[X]).
-split_in_half(L, L1, L2):-
-    length(L,N),
-    intDiv(N,2,N1),
-    length(L1, FILLINHERE),
+split_in_half(L, L1, L2) :-
+    length(L, N),
+    intDiv(N, 2, N1),
+    length(L1, N1),
     append(L1, L2, L).
 
-/* Comment describing merge(S1, S2, S) */
-merge([], L, L). % comment
-merge(L, [],L).  % comment
-merge([H1|T1],[H2|T2],[H1| FILLINHERE]):-
-    H1 FILLINHERE  H2,
+/* Merges sorted lists S1 and S2 into S. */
+merge([], L, L). % A list merged with the empty list is that list.
+merge(L, [],L).  % A list merged with the empty list is that list.
+merge([H1|T1],[H2|T2],[H1|T]):-
+    H1 > H2,
     merge(T1,[H2|T2],T).
 merge([H1|T1], [H2|T2], [H2|T]):-
-    FILLINHERE =< FILLINHERE
-    merge([H1|T1], T2, FILLINHERE).
+    H1 =< H2
+    merge([H1|T1], T2, T).
 
 /* Comment describing split for quickSort */
 split(_, [],[],[]).
