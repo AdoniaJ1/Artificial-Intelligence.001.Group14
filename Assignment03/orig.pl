@@ -1,16 +1,27 @@
+randomList(0, []).
+randomList(N, L):-
+    M is N * 5,
+    randomList(N, L, M).
+randomList(0, [], _).
+randomList(N, [R|T], M):-
+    random(0, M, R),
+    N1 is N - 1,
+    randomList(N1,T,M).
+
 /*swap the first two elements if they are not in order*/
 swap([X, Y|T], [Y, X | T]) :- Y =< X.
 /*swap elements in the tail*/
 swap([H|T], [H|T1]) :- swap(T, T1).
 
-/* Comment describing bubbleSort */
+/* */
 bubbleSort(L,SL):-
     swap(L, L1), % at least one swap is needed
     !,
-    bubbleSort(L1, FILLINHERE).
+    bubbleSort(L1, SL).
 bubbleSort(L, L). % here, the list is already sorted
 
-/* Comment describing ordered */
+/* checks if head of list is =< 2nd element and iterates through the list 
+ * checking if each element is =< the preceding element until tail is empty */
 ordered([]).
 ordered([_X]).
 ordered([H1, H2|T]):-
@@ -22,23 +33,22 @@ ordered([H1, H2|T]):-
 insert(X, [],[X]).
 insert(E, [H|T], [E,H|T]):-
     ordered(T),
-    FILLINHERE(E, H),
+    =<(E, H),
     !.
 /*Comment describing the 2nd clause of insert ...*/
 insert(E, [H|T], [H|T1]):-
     ordered(T),
-    insert(E, T, FILLINHERE).
+    insert(E, T, T1).
 
 /* Comment describing insertionSort */
 insertionSort([], []).
 insertionSort([H|T], SORTED) :-
     insertionSort(T, T1),
-    insert(H, T1, FILLINHERE).
+    insert(H, T1, SORTED).
 
 /*
  * Given a list and a variable, performs merge sort on the list to populate the variable with the sorted list.
- * First splits the list in half, merge sorts either list, then merges them together.
- */
+ * First splits the list in half, merge sorts either list, then merges them together.*/
 mergeSort([], []). % the empty list is sorted
 mergeSort([X], [X]) :- !.
 mergeSort(L, SL):-
@@ -93,22 +103,25 @@ quickSort([H|T], LS):-
     append(S, [H|B], LS).
 
 /* Comment describing hybridSort */
-hybridSort(LIST, bubbleSort, BIGALG, T, SLIST):-
-    length(LIST, N), N=<T,
-    bubbleSort(LIST, FILLINHERE).
-hybridSort(LIST, insertionSort, BIGALG, T, SLIST):-
-    length(LIST, N), N=<T,
+hybridSort(LIST, bubbleSort, _BIGALG, THRESHOLD, SLIST):-
+	length(LIST, N), N =< THRESHOLD,      
+    bubbleSort(LIST, SLIST).
+hybridSort(LIST, insertionSort, _BIGALG, THRESHOLD, SLIST):-
+	length(LIST, N), N =< THRESHOLD,
     insertionSort(LIST, SLIST).
-hybridSort(LIST, SMALL, mergeSort, T, SLIST):-
-    length(LIST, N), N>T,
+hybridSort(LIST, SMALL, mergeSort, THRESHOLD, SLIST):-
+	length(LIST, N), N > THRESHOLD,
     split_in_half(LIST, L1, L2),
-    hybridSort(L1, SMALL, mergeSort, T, S1),
-    hybridSort(L2, SMALL, mergeSort, T, S2),
+    hybridSort(L1, SMALL, mergeSort, THRESHOLD, S1),
+    hybridSort(L2, SMALL, mergeSort, THRESHOLD, S2),
     merge(S1,S2, SLIST).
-hybridSort([H|T], SMALL, quickSort, T, SLIST):-
-    length(LIST, N), N>T,
-    split(H, T, L1, L2),
-    FILLINHERE several lines in the body of this clause
+hybridSort([H|T], SMALL, quickSort, THRESHOLD, SLIST):-
+	length([H|T], N), N > THRESHOLD,      
+	split(H, T, L1, L2),
+	hybridSort(L1, SMALL, quickSort, THRESHOLD, S1),
+	hybridSort(L2, SMALL, quickSort, THRESHOLD, S2 ),    
     append(S1, [H|S2], SLIST).
-hybridSort([H|T], SMALL, quickSort, T, SLIST):-
-    FILLINHERE the full body of this clause
+    
+
+:- dynamic p1/1.
+assert(p1(randomList(5,))).
