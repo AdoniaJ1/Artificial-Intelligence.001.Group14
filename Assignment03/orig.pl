@@ -1,3 +1,4 @@
+/*generate random list of intergers that can be of size 0-N*5, N being the size of the list*/
 randomList(0, []).
 randomList(N, L):-
     M is N * 5,
@@ -13,7 +14,8 @@ swap([X, Y|T], [Y, X | T]) :- Y =< X.
 /*swap elements in the tail*/
 swap([H|T], [H|T1]) :- swap(T, T1).
 
-/* */
+/* Given a list,L and a variable,SL populate SL with the sorted list by recursively sorting L 
+ * swapping elements with preceding elements as necessary */
 bubbleSort(L,SL):-
     swap(L, L1), % at least one swap is needed
     !,
@@ -28,19 +30,22 @@ ordered([H1, H2|T]):-
     H1 =< H2,
     ordered([H2|T]).
 
-/*Comment describing insert(E, SL, SLE) ...*/
-/*Comment describing the 1st clause of insert ...*/
+/* insert(E, SL, SLE) results in SL being solved to an empty list and SLE = [E]*/
+/* If SL is in order and E is smaller than the first element of SL than SLE 
+* resolves to a list of E preceding the elements in SL */
 insert(X, [],[X]).
 insert(E, [H|T], [E,H|T]):-
     ordered(T),
     =<(E, H),
     !.
-/*Comment describing the 2nd clause of insert ...*/
+/* If E is greater than the first element of the list inputed resolve the 
+*third predicate to be the list inputed with E at the end */
 insert(E, [H|T], [H|T1]):-
     ordered(T),
     insert(E, T, T1).
 
-/* Comment describing insertionSort */
+/* insert first element of list and insert into SORTED in correct position and iterate 
+*through the list inserting each element into the correct index in SORTED*/
 insertionSort([], []).
 insertionSort([H|T], SORTED) :-
     insertionSort(T, T1),
