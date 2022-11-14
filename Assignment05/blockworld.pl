@@ -29,14 +29,9 @@ moveFromTable(X, Z, S1, S2):-
     delete([clear, Z], INT, S2). % Z is no longer clear
 
 
-% notequal(X11, X2) holds when X1 and X2 are not equal
+% notequal(X1, X2) holds when X1 and X2 are not equal
 notequal(X, X):- !, fail.
 notequal(_, _).
-
-notmember(_,[]).
-notmember(X, [X|_]):- !, fail.
-notmember(X, [_|T]):-
-    notmember(X, T).
 
 % substitute(E, E1, OLD, NEW) holds when NEW is the list OLD in which E is substituted by E1.  There are no duplicates in OLD or NEW.
 substitute(X, Y, [X|T1], [Y|T1]).
@@ -53,33 +48,23 @@ connected(S1, S2) :- path(S2, S1).
 
 
 
-% ORIGINAL (mostly) from the assignment.
+% ORIGINAL from the assignment and announced hints.
 notYetVisited(State, PathSoFar):-
-	permute(State, PermuteState),
-	\+ member(PermuteState, PathSoFar).
-
-permute([], []).
-permute(L, [X|P]):-
-   delete(X, L, L2),
-   permute(L2, P).
-
-% MODIFIED, to (hopefully) be faster.
-% notYetVisited(_, []).
-% notYetVisited(State, [P|PS]):-
-%     \+ setequal(State, P),
-%     notYetVisited(State, PS).
-
-% setequal([], []).
-% setequal([X|T], S):-
-%     member(X, S),
-%     delete(X, S, S1),
-%     setequal(T, S1).
+    member(State, PathSoFar),
+    !,
+    fail.
+notYetVisited(State, PathSoFar):-
+	permutation(State, PermuteState),
+	member(PermuteState, PathSoFar),
+    !,
+    fail.
+notYetVisited(_, _).
 
 
 
 %dfs(State1, Path, PathSoFar): returns the Path from the start to the goal states.
-% Trivial: if X is the goal return X as the path from X to X.
-dfs(X, [X], _):- goal(X).
+% Trivial: if X or a permutation Y of X is the goal, return X as the path from X to X.
+dfs(X, [X], _):- goal(Y), permutation(X, Y).
 % else expand X by Y and find path from Y
 dfs(X, [X|Ypath], VISITED):-
     connected(X, Y),
@@ -92,4 +77,3 @@ goal([ [on, d, a], [on, a, c], [on, c, b], [on, b, "table"], [clear, a] ]).
 
 % To run code:
 % ?- start(S1), dfs(S1, P, [S1]).
-
